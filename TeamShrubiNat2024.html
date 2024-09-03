@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squamish Plants</title>
+    <title>QHI Plants</title>
 
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
@@ -152,14 +152,13 @@
         }
 
 
-
         ////// map /////////////////////////////////////////////////////////////
         mapboxgl.accessToken = 'pk.eyJ1Ijoibm9ydG9uMjciLCJhIjoiY2xoam9hNHI5MGpuMjNscWtlcTF2dTN3dyJ9.xx0qCx-woV7mYFkrMNQmiA'; //change accesss token to Nch'kay lab
         const map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/norton27/clt6q7cpd00g601o8dhbr3nvw', //insert style here, here are some pre-set options https://docs.mapbox.com/api/maps/styles/
-            center: [-123.16761577284362, 49.68914344599266], //insert coordinates here
-            zoom: 9,
+            style: 'mapbox://styles/norton27/clt6q7cpd00g601o8dhbr3nvw',
+            center: [-138.94276380502768, 69.56499352125434], 
+            zoom: 10,
             pitch: 60,
             bearing: 30
         });
@@ -200,8 +199,22 @@
 
             map.addSource('plants_data', {
                 type: 'geojson',
-                data: 'https://raw.githubusercontent.com/ITEX-sites/Squamish_plants_map/main/plant_species_cleaned.geojson' // Replace with the URL of your GeoJSON data
+                data: 'https://raw.githubusercontent.com/cnorton27/TeamShrub-iNat-Map-2024/main/iNat_2024.geojson' // Replace with the URL of your GeoJSON data
             });
+
+            map.addLayer({
+                id: 'base-plants',
+                type: 'circle',
+                source: 'plants_data',
+                paint: {
+                    'circle-color': '#666699',
+                    'circle-radius': 5,
+                    'circle-stroke-width': .25,
+                    'circle-stroke-color': '#fff',
+                    'circle-opacity': 1
+                },
+            });
+
 
             map.addLayer({
                 id: 'highlighted-plants',
@@ -215,12 +228,12 @@
                     'circle-opacity': 1
                 },
                 //(this layer doesn't show on load)
-                'filter': ['in', 'feature_collection_name', '']
+                'filter': ['in', 'scientific_name', '']
             });
 
 
             map.addLayer({
-                id: 'squam-plants',
+                id: 'QHI-plants',
                 type: 'circle',
                 source: 'plants_data',
                 paint: {
@@ -306,7 +319,7 @@
 
                 if (bbox) {
                     const features = map.queryRenderedFeatures(bbox, {
-                        layers: ['squam-plants']
+                        layers: ['QHI-plants']
                     });
 
                     if (features.length >= 10000) {
@@ -330,9 +343,9 @@
             });
 
             //popup ... might delete or change info to a picture of the plants from iNaturalist later
-            map.on('click', 'squam-plants', (e) => {
+            map.on('click', 'QHI-plants', (e) => {
                 const coordinates = e.features[0].geometry.coordinates.slice();
-                const description = e.features[0].properties.feature_collection_name;
+                const description = e.features[0].properties.scientific_name;
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
@@ -373,23 +386,23 @@
 
             }
 
-            map.on('mousemove', 'squam-plants', (e) => {
+            map.on('mousemove', 'QHI-plants', (e) => {
 
                 // feature = plant that mouse is hovering over
                 const feature = e.features[0];
 
-                const current_species = feature.properties.feature_collection_name
+                const current_species = feature.properties.scientific_name
 
-                const relatedplants = map.querySourceFeatures('highlighted-plants', {  //'squam-plants'
+                const relatedplants = map.querySourceFeatures('highlighted-plants', {  //'QHI-plants'
                     sourceLayer: 'original',
-                    filter: ['in', 'feature_collection_name', current_species]
+                    filter: ['in', 'scientific_name', current_species]
                 });
 
                 const uniqueplants = getUniqueFeatures(relatedplants, 'ID');
 
                 const title = document.createElement('strong');
                 title.textContent =
-                    feature.properties.feature_collection_name
+                    feature.properties.scientific_name
 
                 const ID = document.createElement('div');
                 ID.textContent =
@@ -405,16 +418,16 @@
 
                 map.setFilter('highlighted-plants', [
                     'in',
-                    'feature_collection_name',
-                    feature.properties.feature_collection_name
+                    'scientific_name',
+                    feature.properties.scientific_name
                 ]);
 
             });
 
-            map.on('mouseleave', 'squam-plants', () => {
+            map.on('mouseleave', 'QHI-plants', () => {
                 map.getCanvas().style.cursor = '';
                 popup3.remove();
-                map.setFilter('highlighted-plants', ['in', 'feature_collection_name', '']);
+                map.setFilter('highlighted-plants', ['in', 'scientific_name', '']);
                 overlay.style.display = 'none';
             });
         });
