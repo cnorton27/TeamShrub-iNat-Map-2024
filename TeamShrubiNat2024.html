@@ -105,7 +105,7 @@
         }
 
         .mapboxgl-popup {
-            max-width: 400px;
+            max-width: 4000px;
             font:
                 12px/20px 'Helvetica Neue',
                 Arial,
@@ -357,7 +357,8 @@
             
         const popup = new mapboxgl.Popup({
             closeButton: false,
-            closeOnClick: false
+            closeOnClick: false,
+            anchor: 'right'
            
         });
             
