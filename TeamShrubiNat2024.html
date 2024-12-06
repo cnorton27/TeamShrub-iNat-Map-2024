@@ -129,6 +129,59 @@
             padding: 10px;
             display: none;
         }
+
+        .filter-group {
+        font:
+            12px/20px 'Helvetica Neue',
+            Arial,
+            Helvetica,
+            sans-serif;
+        font-weight: 600;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1;
+        border-radius: 3px;
+        width: 120px;
+        color: #fff;
+        }
+
+        .filter-group input[type='checkbox']:first-child + label {
+            border-radius: 3px 3px 0 0;
+        }
+
+        .filter-group label:last-child {
+            border-radius: 0 0 3px 3px;
+            border: none;
+        }
+
+        .filter-group input[type='checkbox'] {
+            display: none;
+        }
+
+        .filter-group input[type='checkbox'] + label {
+            background-color: #3386c0;
+            display: block;
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        }
+
+        .filter-group input[type='checkbox'] + label {
+            background-color: #3386c0;
+            text-transform: capitalize;
+        }
+
+        .filter-group input[type='checkbox'] + label:hover,
+        .filter-group input[type='checkbox']:checked + label {
+            background-color: #4ea0da;
+        }
+
+        .filter-group input[type='checkbox']:checked + label:before {
+            content: '✔';
+            margin-right: 5px;
+        }
+
     </style>
 
 
@@ -138,6 +191,7 @@
 <body>
 
     <div id='map'></div>
+    <nav id="filter-group" class="filter-group"></nav>
 
 
     <div id="popup_title" class="popup_title">
@@ -145,7 +199,7 @@
         <img id="popup_titleImg" src="title_page-03.png" alt="Popup Image"> 
     </div>
 
-    <button class="button" onclick="togglePopup()">Toggle Image</button>
+    <button class="button" onclick="togglePopup()">Toggle Title</button>
 
     <div id="map-overlay" class="map-overlay"></div>
 
@@ -167,7 +221,7 @@
         mapboxgl.accessToken = 'pk.eyJ1Ijoibm9ydG9uMjciLCJhIjoiY2xoam9hNHI5MGpuMjNscWtlcTF2dTN3dyJ9.xx0qCx-woV7mYFkrMNQmiA'; //change accesss token to Nch'kay lab
         const map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/norton27/cm0zm7rcg025y01pw1uakdsl9',
+            style: 'mapbox://styles/norton27/clurcu4up00lj01r73d97d93f',
             center: [-138.94276380502768, 69.56499352125434], 
             zoom: 10,
             pitch: 60,
@@ -213,6 +267,35 @@
                 data: 'https://raw.githubusercontent.com/cnorton27/TeamShrub-iNat-Map-2024/main/iNat_2024.geojson' // Replace with the URL of your GeoJSON data
             });
 
+            // Access the source by its ID
+            const source = map.getSource('plants_data');
+            console.log(source)
+
+            if (source && source.type === 'geojson') {
+                // Save the GeoJSON data to a variable
+                const geojsonData = source._data; // Mapbox's internal property for GeoJSON data
+
+                console.log(geojsonData); // Output the GeoJSON data
+            } else {
+                console.error('Source not found or not a GeoJSON source');
+            }
+
+
+/// usung jQuery to load data as geojson variable
+
+            var plantJson = $.ajax({
+                    url:"https://raw.githubusercontent.com/cnorton27/TeamShrub-iNat-Map-2024/main/iNat_2024.geojson",
+                    dataType: "json",
+                    success: console.log("Plant data successfully loaded."),
+                    error: function (xhr) {
+                        alert(xhr.statusText)
+                    }
+                    })
+            console.log(plantJson)
+
+            var iNatJson = plantJson.responseJSON
+            console.log(iNatJson)
+            
             map.addLayer({
                 id: 'base-plants',
                 type: 'circle',
@@ -356,7 +439,7 @@
             //popup ... might delete or change info to a picture of the plants from iNaturalist later
             
         const popup = new mapboxgl.Popup({
-            closeButton: false,
+            closeButton: true,
             closeOnClick: false,
             anchor: 'right'
            
@@ -399,9 +482,47 @@
 
 
         });
-    })
         
 
+    //////////////////// Query by iNat observer /////////////////////////////////////////
+    
+        const filterGroup = document.getElementById('filter-group');
+
+        const updateLayerFilter = () => {
+            // get an array of icon names that corresponds to the currently checked checkboxes
+            const checkediNatObservers = [...document.getElementsByTagName('input')]
+                .filter((el) => el.checked)
+                .map((el) => el.id);
+
+            // use an 'in' expression to filter the layer
+            map.setFilter('base-plants', ['in', 'user_login', ...checkediNatObservers]);
+        };
+
+        // get an array of all unique `icon` properties
+        const iNatObservers = ['camerondeckert', 'teamshrub', 'ciaranorton', 'beaucheminalex', 'elias_bowman', 'charlottemittelstaedt'];
+
+    //    for (const feature of source.features) {
+   //         const iNatObserver = feature.properties.user_login;
+   //         if (!iNatObservers.includes(iNatObserver)) iNatObservers.push(iNatObserver);
+   //     }
+
+        // for each `icon` value, create a checkbox and label
+        for (const iNatObserver of iNatObservers) {
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = iNatObserver;
+            input.checked = true;
+            filterGroup.appendChild(input);
+
+            const label = document.createElement('label');
+            label.setAttribute('for', iNatObserver);
+            label.textContent = iNatObserver;
+            filterGroup.appendChild(label);
+
+            // When any checkbox changes, update the filter.
+            input.addEventListener('change', updateLayerFilter);
+        }
+    });
         ////////////////search similar features through mouse-over/////////////////////////////////////////////////////////////////////////
 
         map.on('load', () => {
