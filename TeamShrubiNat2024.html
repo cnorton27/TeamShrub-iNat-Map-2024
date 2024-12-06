@@ -19,7 +19,18 @@
             margin: 0;
             padding: 0;
         }
+        
+        .mapboxgl-popup {
+        width: 100%;
+        max-width: 100%;
+        color: blue;
+        font:
+            12px/20px 'Helvetica Neue',
+            Arial,
+            Helvetica,
+            sans-serif;
 
+    }
 
         #map {
             position: absolute;
@@ -343,23 +354,52 @@
             });
 
             //popup ... might delete or change info to a picture of the plants from iNaturalist later
-            map.on('click', 'QHI-plants', (e) => {
+            
+        const popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false
+           
+        });
+            
+        map.on('click', 'QHI-plants', (e) => {
                 const coordinates = e.features[0].geometry.coordinates.slice();
-                const description = e.features[0].properties.scientific_name;
+                const ScientificName = e.features[0].properties.scientific_name;
+                const CommonName= e.features[0].properties.common_name;
+                const Observer= e.features[0].properties.user_login;
+                var image_path = e.features[0].properties.image_url
+
+                const image_popup = `
+                <div class="ald_popup">
+                <h3>${ScientificName}</h3>
+                <p><strong>Common name:</strong> ${CommonName}</p>
+                <p><strong>Observer:</strong> ${Observer}</p>
+
+                <img src="${image_path}" alt="${ScientificName}" style="width: auto; height: 400px;">
+                '</div>'
+            `;
+    
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+                if (['mercator', 'equirectangular'].includes(map.getProjection().name)) {
+                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                    }
+                }
+
+    
+            popup.setLngLat(coordinates).setHTML(image_popup).addTo(map);
+            
+
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
 
-                new mapboxgl.Popup()
-                    .setLngLat(coordinates)
-                    .setText(description)
-                    .addTo(map);
-            });
-
 
         });
-
+    })
+        
 
         ////////////////search similar features through mouse-over/////////////////////////////////////////////////////////////////////////
 
