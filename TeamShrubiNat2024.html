@@ -138,7 +138,7 @@
             sans-serif;
         font-weight: 600;
         position: absolute;
-        top: 10px;
+        bottom: 30px;
         right: 10px;
         z-index: 1;
         border-radius: 3px;
@@ -222,10 +222,10 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/satellite-v9',
-            center: [-138.94276380502768, 69.56499352125434], 
-            zoom: 10,
-            pitch: 60,
-            bearing: 30
+            center: [-134.76849818590352, 64.27513501663988],
+            zoom: 4.3,
+            pitch: 10,
+            bearing: 0
         });
 
         map.addControl(new mapboxgl.NavigationControl());
@@ -250,8 +250,6 @@
 
         // Disable default box zooming.
         map.boxZoom.disable();
-
-        // Create a popup, but don't add it to the map yet.
 
         map.on('load', () => {
 
