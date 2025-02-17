@@ -19,7 +19,18 @@
             margin: 0;
             padding: 0;
         }
+        
+        .mapboxgl-popup {
+        width: 100%;
+        max-width: 100%;
+        color: black;
+        font:
+            12px/20px 'Helvetica Neue',
+            Arial,
+            Helvetica,
+            sans-serif;
 
+    }
 
         #map {
             position: absolute;
@@ -94,7 +105,7 @@
         }
 
         .mapboxgl-popup {
-            max-width: 400px;
+            max-width: 4000px;
             font:
                 12px/20px 'Helvetica Neue',
                 Arial,
@@ -118,6 +129,59 @@
             padding: 10px;
             display: none;
         }
+
+        .filter-group {
+        font:
+            12px/20px 'Helvetica Neue',
+            Arial,
+            Helvetica,
+            sans-serif;
+        font-weight: 600;
+        position: absolute;
+        bottom: 30px;
+        right: 10px;
+        z-index: 1;
+        border-radius: 3px;
+        width: 120px;
+        color: #fff;
+        }
+
+        .filter-group input[type='checkbox']:first-child + label {
+            border-radius: 3px 3px 0 0;
+        }
+
+        .filter-group label:last-child {
+            border-radius: 0 0 3px 3px;
+            border: none;
+        }
+
+        .filter-group input[type='checkbox'] {
+            display: none;
+        }
+
+        .filter-group input[type='checkbox'] + label {
+            background-color: #97cb34;
+            display: block;
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+        }
+
+        .filter-group input[type='checkbox'] + label {
+            background-color: #97cb34;
+            text-transform: capitalize;
+        }
+
+        .filter-group input[type='checkbox'] + label:hover,
+        .filter-group input[type='checkbox']:checked + label {
+            background-color: #97cb34;
+        }
+
+        .filter-group input[type='checkbox']:checked + label:before {
+            content: '✔';
+            margin-right: 5px;
+        }
+
     </style>
 
 
@@ -127,6 +191,7 @@
 <body>
 
     <div id='map'></div>
+    <nav id="filter-group" class="filter-group"></nav>
 
 
     <div id="popup_title" class="popup_title">
@@ -134,7 +199,7 @@
         <img id="popup_titleImg" src="title_page-03.png" alt="Popup Image"> 
     </div>
 
-    <button class="button" onclick="togglePopup()">Toggle Image</button>
+    <button class="button" onclick="togglePopup()">Toggle Title</button>
 
     <div id="map-overlay" class="map-overlay"></div>
 
@@ -156,11 +221,11 @@
         mapboxgl.accessToken = 'pk.eyJ1Ijoibm9ydG9uMjciLCJhIjoiY2xoam9hNHI5MGpuMjNscWtlcTF2dTN3dyJ9.xx0qCx-woV7mYFkrMNQmiA'; //change accesss token to Nch'kay lab
         const map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/norton27/cm0zm7rcg025y01pw1uakdsl9',
-            center: [-138.94276380502768, 69.56499352125434], 
-            zoom: 10,
-            pitch: 60,
-            bearing: 30
+            style: 'mapbox://styles/mapbox/satellite-v9',
+            center: [-134.76849818590352, 64.27513501663988],
+            zoom: 4.3,
+            pitch: 10,
+            bearing: 0
         });
 
         map.addControl(new mapboxgl.NavigationControl());
@@ -186,8 +251,6 @@
         // Disable default box zooming.
         map.boxZoom.disable();
 
-        // Create a popup, but don't add it to the map yet.
-
         map.on('load', () => {
 
 
@@ -202,6 +265,36 @@
                 data: 'https://raw.githubusercontent.com/cnorton27/TeamShrub-iNat-Map-2024/main/iNat_2024.geojson' // Replace with the URL of your GeoJSON data
             });
 
+            // Access the source by its ID
+            const source = map.getSource('plants_data');
+            console.log(source)
+
+            if (source && source.type === 'geojson') {
+                // Save the GeoJSON data to a variable
+                const geojsonData = source._data; // Mapbox's internal property for GeoJSON data
+
+                console.log(geojsonData); // Output the GeoJSON data
+            } else {
+                console.error('Source not found or not a GeoJSON source');
+            }
+
+
+/// usung jQuery to load data as geojson variable
+
+            var plantJson = $.ajax({
+                    url:"https://raw.githubusercontent.com/cnorton27/TeamShrub-iNat-Map-2024/main/iNat_2024.geojson",
+                    dataType: "json",
+                    success: console.log("Plant data successfully loaded."),
+                    error: function (xhr) {
+                        alert(xhr.statusText)
+                    }
+                    })
+            console.log(plantJson)
+
+            var iNatJson = plantJson.responseJSON
+            console.log(iNatJson)
+            
+            
             map.addLayer({
                 id: 'base-plants',
                 type: 'circle',
@@ -343,24 +436,93 @@
             });
 
             //popup ... might delete or change info to a picture of the plants from iNaturalist later
-            map.on('click', 'QHI-plants', (e) => {
+            
+        const popup = new mapboxgl.Popup({
+            closeButton: true,
+            closeOnClick: false,
+            anchor: 'right'
+           
+        });
+            
+        map.on('click', 'QHI-plants', (e) => {
                 const coordinates = e.features[0].geometry.coordinates.slice();
-                const description = e.features[0].properties.scientific_name;
+                const ScientificName = e.features[0].properties.scientific_name;
+                const CommonName= e.features[0].properties.common_name;
+                const Observer= e.features[0].properties.user_login;
+                var image_path = e.features[0].properties.image_url
+
+                const image_popup = `
+                <div class="ald_popup">
+                <h3>${ScientificName}</h3>
+                <p><strong>Common name:</strong> ${CommonName}</p>
+                <p><strong>Observer:</strong> ${Observer}</p>
+
+                <img src="${image_path}" alt="${ScientificName}" style="width: auto; height: 400px;">
+                '</div>'
+            `;
+    
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+                if (['mercator', 'equirectangular'].includes(map.getProjection().name)) {
+                    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+                        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+                    }
+                }
+
+    
+            popup.setLngLat(coordinates).setHTML(image_popup).addTo(map);
+            
+
 
                 while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
                     coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
                 }
 
-                new mapboxgl.Popup()
-                    .setLngLat(coordinates)
-                    .setText(description)
-                    .addTo(map);
-            });
-
 
         });
+        
+
+    //////////////////// Query by iNat observer /////////////////////////////////////////
+    
+        const filterGroup = document.getElementById('filter-group');
+
+        const updateLayerFilter = () => {
+            // get an array of icon names that corresponds to the currently checked checkboxes
+            const checkediNatObservers = [...document.getElementsByTagName('input')]
+                .filter((el) => el.checked)
+                .map((el) => el.id);
+
+            // use an 'in' expression to filter the layer
+            map.setFilter('base-plants', ['in', 'user_login', ...checkediNatObservers]);
+        };
+
+        // get an array of all unique `icon` properties
+        const iNatObservers = ['camerondeckert', 'teamshrub', 'ciaranorton', 'beaucheminalex', 'elias_bowman', 'charlottemittelstaedt', 'anyagbee', 'laurenmoody', 'seigna_kathleen', 'gina_mamayauk', 'micaheckert', 'snaughtin'];
 
 
+    //    for (const feature of source.features) {                                                          /// need to finish this code which populated iNatObservers list
+   //         const iNatObserver = feature.properties.user_login;
+   //         if (!iNatObservers.includes(iNatObserver)) iNatObservers.push(iNatObserver);
+   //     }
+
+        // for each `icon` value, create a checkbox and label
+        for (const iNatObserver of iNatObservers) {
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = iNatObserver;
+            input.checked = true;
+            filterGroup.appendChild(input);
+
+            const label = document.createElement('label');
+            label.setAttribute('for', iNatObserver);
+            label.textContent = iNatObserver;
+            filterGroup.appendChild(label);
+
+            // When any checkbox changes, update the filter.
+            input.addEventListener('change', updateLayerFilter);
+        }
+    });
         ////////////////search similar features through mouse-over/////////////////////////////////////////////////////////////////////////
 
         map.on('load', () => {
@@ -406,7 +568,7 @@
 
                 const ID = document.createElement('div');
                 ID.textContent =
-                    'Total plants:' + " " +
+                    'Total observations:' + " " +
                     feature.properties.species_count
 
                 overlay.innerHTML = '';
